@@ -13,9 +13,37 @@ spec:
       labels:
         app: django-notes
     spec:
+      serviceAccountName: django-notes-sa
+
       containers:
         - name: django-notes
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           ports:
             - containerPort: 8000
+
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: django-notes-prod
+                  key: DB_PASSWORD
+
+            - name: DJANGO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: django-notes-prod
+                  key: DJANGO_SECRET_KEY
+
+          volumeMounts:
+            - name: secrets-store
+              mountPath: "/mnt/secrets"
+              readOnly: true
+
+      volumes:
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: django-notes-secrets
 
